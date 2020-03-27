@@ -1,11 +1,12 @@
+use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::Feature;
 
 #[derive(Debug)]
 pub struct KeyValue<'a> {
-    key: &'a str,
-    raw_value: &'a str,
+    key: Cow<'a, str>,
+    raw_value: Cow<'a, str>,
 
     /// The typed value is only created (parsed) when needed.
     /// An example where this is not needed is if this KeyValue feature
@@ -15,10 +16,10 @@ pub struct KeyValue<'a> {
 
 impl<'a> KeyValue<'a> {
     /// Create a new KeyValue from a key and a value.
-    pub fn new(key: &'a str, raw_value: &'a str) -> Self {
+    pub fn new(key: impl Into<Cow<'a, str>>, raw_value: impl Into<Cow<'a, str>>) -> Self {
         Self {
-            key,
-            raw_value,
+            key: key.into(),
+            raw_value: raw_value.into(),
             typed_value: None,
         }
     }
@@ -37,16 +38,16 @@ impl<'a> KeyValue<'a> {
     }
 
     fn parse_typed_value(&self) -> TypedValue<'a> {
-        if let Ok(val) = i32::from_str(self.raw_value) {
+        if let Ok(val) = i32::from_str(&self.raw_value) {
             return TypedValue::I32(val);
         }
 
-        if let Ok(val) = f32::from_str(self.raw_value) {
+        if let Ok(val) = f32::from_str(&self.raw_value) {
             return TypedValue::F32(val);
         }
 
         // Attempt to recognize common serialized forms of null.
-        match self.raw_value {
+        match self.raw_value.as_ref() {
             "null" | "nil" => return TypedValue::Null,
             _ => (),
         }
@@ -58,7 +59,7 @@ impl<'a> KeyValue<'a> {
 #[derive(Debug, PartialEq)]
 enum TypedValue<'a> {
     Null,
-    Str(&'a str),
+    Str(Cow<'a, str>),
     I32(i32),
     F32(f32),
 }
@@ -111,7 +112,7 @@ mod tests {
     fn typed_value_str_works() {
         assert_eq!(
             KeyValue::new("_", "some random garbage").typed_value(),
-            &TypedValue::Str("some random garbage")
+            &TypedValue::Str(Cow::Borrowed("some random garbage"))
         );
     }
 
