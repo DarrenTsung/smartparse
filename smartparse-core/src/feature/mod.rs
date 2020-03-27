@@ -1,5 +1,13 @@
+mod identifier;
+
+// Features
 mod kv;
 mod source;
+
+#[cfg(test)]
+mod testutil;
+
+use self::source::Source;
 
 /// A Feature is an identifying object found on a given item that can be used
 /// for comparison and clustering.

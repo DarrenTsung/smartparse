@@ -1,0 +1,81 @@
+use std::borrow::Cow;
+
+use serde_json::Value;
+
+use super::FeatureIdentifier;
+use crate::feature::{
+    kv::{KeyValue, TypedValue},
+    Source,
+};
+
+struct Json {}
+
+impl<'a> FeatureIdentifier<'a> for Json {
+    type Feature = KeyValue<'static>;
+
+    fn identify(&self, input: &'a str) -> Vec<Self::Feature> {
+        let v: Value = if let Ok(val) = serde_json::from_str(input) {
+            val
+        } else {
+            return vec![];
+        };
+
+        let mut features = vec![];
+        // TODO(darren): more complex JSON parsing, right now we'll just parse
+        // the top-level keys / values.
+        if let Value::Object(map) = v {
+            for (key, value) in map {
+                // NOTE(darren): maybe there is a better way here, but to derive
+                // the raw value here we convert it back to a string.. it's a bit hacky.
+                let raw_value = value.to_string();
+                let typed_value = match value {
+                    Value::Null => TypedValue::Null,
+                    Value::Bool(v) => TypedValue::Bool(v),
+                    Value::Number(v) => {
+                        if let Some(v) = v.as_i64() {
+                            TypedValue::I64(v)
+                        } else if let Some(v) = v.as_f64() {
+                            TypedValue::F64(v)
+                        } else {
+                            // NOTE(darren): could support more types (u64, for example) here.
+                            continue;
+                        }
+                    }
+                    Value::String(v) => TypedValue::Str(Cow::Owned(dbg!(v))),
+                    // TODO(darren): Implement, we skip more complex types for now.
+                    Value::Array(_) | Value::Object(_) => continue,
+                };
+                features.push(KeyValue::new_typed(key, raw_value, typed_value))
+            }
+        }
+        features
+    }
+
+    fn source(&self) -> crate::feature::Source {
+        Source::Json
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::feature::testutil::*;
+
+    #[test]
+    fn works_as_expected() {
+        let features = Json {}.identify(r#"{ "a": "foo", "b": 100, "zz": 80.1 }"#);
+        assert_similarity_equal(
+            features,
+            vec![
+                KeyValue::new("a", "foo"),
+                KeyValue::new("b", "100"),
+                KeyValue::new("zz", "80.1"),
+            ],
+        );
+    }
+
+    #[test]
+    fn source_works() {
+        assert_eq!(Json {}.source(), Source::Json);
+    }
+}

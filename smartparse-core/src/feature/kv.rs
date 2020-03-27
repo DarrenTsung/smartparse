@@ -24,6 +24,21 @@ impl<'a> KeyValue<'a> {
         }
     }
 
+    /// Create a new KeyValue from a key and a value, providing an already typed value.
+    /// This is useful for removing redundant work - for example, if the JSON parser
+    /// has already identified types in the process of parsing.
+    pub(in crate::feature) fn new_typed(
+        key: impl Into<Cow<'a, str>>,
+        raw_value: impl Into<Cow<'a, str>>,
+        typed_value: TypedValue<'a>,
+    ) -> Self {
+        Self {
+            key: key.into(),
+            raw_value: raw_value.into(),
+            typed_value: Some(typed_value),
+        }
+    }
+
     fn value_type(&mut self) -> Type {
         self.typed_value().primative_type()
     }
@@ -38,17 +53,20 @@ impl<'a> KeyValue<'a> {
     }
 
     fn parse_typed_value(&self) -> TypedValue<'a> {
-        if let Ok(val) = i32::from_str(&self.raw_value) {
-            return TypedValue::I32(val);
+        if let Ok(val) = i64::from_str(&self.raw_value) {
+            return TypedValue::I64(val);
         }
 
-        if let Ok(val) = f32::from_str(&self.raw_value) {
-            return TypedValue::F32(val);
+        if let Ok(val) = f64::from_str(&self.raw_value) {
+            return TypedValue::F64(val);
         }
 
-        // Attempt to recognize common serialized forms of null.
         match self.raw_value.as_ref() {
+            // Deseralize nulls.
             "null" | "nil" => return TypedValue::Null,
+            // Deserialize booleans.
+            "False" | "false" => return TypedValue::Bool(false),
+            "True" | "true" => return TypedValue::Bool(true),
             _ => (),
         }
 
@@ -57,19 +75,21 @@ impl<'a> KeyValue<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-enum TypedValue<'a> {
+pub(in crate::feature) enum TypedValue<'a> {
     Null,
     Str(Cow<'a, str>),
-    I32(i32),
-    F32(f32),
+    Bool(bool),
+    I64(i64),
+    F64(f64),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Type {
     Null,
     Str,
-    I32,
-    F32,
+    Bool,
+    I64,
+    F64,
 }
 
 impl<'a> TypedValue<'a> {
@@ -77,8 +97,9 @@ impl<'a> TypedValue<'a> {
         match self {
             Self::Null => Type::Null,
             Self::Str(_) => Type::Str,
-            Self::I32(_) => Type::I32,
-            Self::F32(_) => Type::F32,
+            Self::Bool(_) => Type::Bool,
+            Self::I64(_) => Type::I64,
+            Self::F64(_) => Type::F64,
         }
     }
 }
@@ -98,8 +119,8 @@ impl<'a> Feature for KeyValue<'a> {
         }
 
         // At this point, we have an assumption that
-        // a is equivalent to b.
-        debug_assert!(a.key == b.key && a.raw_value == b.raw_value);
+        // a is basically equivalent to b. However, this does not necessarily
+        // mean that a.raw_value == b.raw_value.
         1.0
     }
 }
@@ -117,30 +138,30 @@ mod tests {
     }
 
     #[test]
-    fn typed_value_i32_works() {
+    fn typed_value_i64_works() {
         assert_eq!(
             KeyValue::new("_", "100").typed_value(),
-            &TypedValue::I32(100)
+            &TypedValue::I64(100)
         );
         assert_eq!(
             KeyValue::new("_", "-52").typed_value(),
-            &TypedValue::I32(-52)
+            &TypedValue::I64(-52)
         );
     }
 
     #[test]
-    fn typed_value_f32_works() {
+    fn typed_value_f64_works() {
         assert_eq!(
             KeyValue::new("_", "-52.2").typed_value(),
-            &TypedValue::F32(-52.2)
+            &TypedValue::F64(-52.2)
         );
         assert_eq!(
             KeyValue::new("_", "-52.0").typed_value(),
-            &TypedValue::F32(-52.0)
+            &TypedValue::F64(-52.0)
         );
         assert_eq!(
             KeyValue::new("_", "3882.0").typed_value(),
-            &TypedValue::F32(3882.0)
+            &TypedValue::F64(3882.0)
         );
     }
 
