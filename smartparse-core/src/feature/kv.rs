@@ -32,19 +32,32 @@ impl<'a> KeyValue<'a> {
             return self.typed_value.as_ref().expect("exists");
         }
 
-        self.typed_value = Some(if let Ok(val) = i32::from_str(self.raw_value) {
-            TypedValue::I32(val)
-        } else if let Ok(val) = f32::from_str(self.raw_value) {
-            TypedValue::F32(val)
-        } else {
-            TypedValue::Str(self.raw_value.clone())
-        });
+        self.typed_value = Some(self.parse_typed_value());
         self.typed_value.as_ref().expect("exists")
+    }
+
+    fn parse_typed_value(&self) -> TypedValue<'a> {
+        if let Ok(val) = i32::from_str(self.raw_value) {
+            return TypedValue::I32(val);
+        }
+
+        if let Ok(val) = f32::from_str(self.raw_value) {
+            return TypedValue::F32(val);
+        }
+
+        // Attempt to recognize common serialized forms of null.
+        match self.raw_value {
+            "null" | "nil" => return TypedValue::Null,
+            _ => (),
+        }
+
+        TypedValue::Str(self.raw_value.clone())
     }
 }
 
 #[derive(Debug, PartialEq)]
 enum TypedValue<'a> {
+    Null,
     Str(&'a str),
     I32(i32),
     F32(f32),
@@ -52,6 +65,7 @@ enum TypedValue<'a> {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Type {
+    Null,
     Str,
     I32,
     F32,
@@ -60,6 +74,7 @@ enum Type {
 impl<'a> TypedValue<'a> {
     fn primative_type(&self) -> Type {
         match self {
+            Self::Null => Type::Null,
             Self::Str(_) => Type::Str,
             Self::I32(_) => Type::I32,
             Self::F32(_) => Type::F32,
@@ -126,5 +141,11 @@ mod tests {
             KeyValue::new("_", "3882.0").typed_value(),
             &TypedValue::F32(3882.0)
         );
+    }
+
+    #[test]
+    fn typed_value_null_works() {
+        assert_eq!(KeyValue::new("_", "null").typed_value(), &TypedValue::Null);
+        assert_eq!(KeyValue::new("_", "nil").typed_value(), &TypedValue::Null);
     }
 }
