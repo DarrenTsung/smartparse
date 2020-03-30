@@ -1,13 +1,9 @@
 use std::collections::HashSet;
-use std::fmt::Debug;
 
 use crate::feature::Feature;
 
 #[cfg(test)]
-pub(in crate::feature) fn assert_similarity_equal<F: Feature + Debug>(
-    mut a: Vec<F>,
-    mut b: Vec<F>,
-) {
+pub(in crate::feature) fn assert_similarity_equal(mut a: Vec<Feature>, mut b: Vec<Feature>) {
     let a_debug = format!("{:?}", a);
 
     let mut used_indices = HashSet::new();
@@ -18,7 +14,7 @@ pub(in crate::feature) fn assert_similarity_equal<F: Feature + Debug>(
                 continue;
             }
 
-            if F::similarity(a_item, b_item) == 1.0 {
+            if Feature::similarity(a_item, b_item) == 1.0 {
                 found_index = Some(index);
                 break;
             }

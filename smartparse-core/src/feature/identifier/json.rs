@@ -3,17 +3,12 @@ use std::borrow::Cow;
 use serde_json::Value;
 
 use super::FeatureIdentifier;
-use crate::feature::{
-    kv::{KeyValue, TypedValue},
-    Source,
-};
+use crate::feature::{Feature, Source, TypedValue};
 
 struct Json {}
 
 impl<'a> FeatureIdentifier<'a> for Json {
-    type Feature = KeyValue<'static>;
-
-    fn identify(&self, input: &'a str) -> Option<Vec<Self::Feature>> {
+    fn identify(&self, input: &'a str) -> Option<Vec<Feature>> {
         // Don't try to even parse as json object if it doesn't look like
         // a json hash (what we support right now).
         if !input.trim().starts_with("{") {
@@ -51,7 +46,7 @@ impl<'a> FeatureIdentifier<'a> for Json {
                     // TODO(darren): Implement, we skip more complex types for now.
                     Value::Array(_) | Value::Object(_) => continue,
                 };
-                features.push(KeyValue::new_typed(key, raw_value, typed_value))
+                features.push(Feature::new_typed(key, raw_value, typed_value))
             }
             Some(features)
         } else {
@@ -75,9 +70,9 @@ mod tests {
         assert_similarity_equal(
             features.expect("found features"),
             vec![
-                KeyValue::new("a", "foo"),
-                KeyValue::new("b", "100"),
-                KeyValue::new("zz", "80.1"),
+                Feature::new("a", "foo"),
+                Feature::new("b", "100"),
+                Feature::new("zz", "80.1"),
             ],
         );
     }
