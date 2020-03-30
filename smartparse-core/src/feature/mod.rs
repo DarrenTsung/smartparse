@@ -1,10 +1,10 @@
 mod identifier;
-mod source;
+mod metadata;
 
 #[cfg(test)]
 mod testutil;
 
-use self::source::Source;
+use self::metadata::{Metadata, Source};
 
 use std::borrow::Cow;
 use std::str::FromStr;
@@ -20,6 +20,8 @@ pub struct Feature<'a> {
     /// An example where this is not needed is if this feature
     /// does not match the cluster, and is discarded, knowing the type is not useful.
     typed_value: Option<TypedValue<'a>>,
+
+    metadata: Metadata,
 }
 
 impl<'a> Feature<'a> {
@@ -29,6 +31,7 @@ impl<'a> Feature<'a> {
             key: key.into(),
             raw_value: raw_value.into(),
             typed_value: None,
+            metadata: Metadata::default(),
         }
     }
 
@@ -44,7 +47,14 @@ impl<'a> Feature<'a> {
             key: key.into(),
             raw_value: raw_value.into(),
             typed_value: Some(typed_value),
+            metadata: Metadata::default(),
         }
+    }
+
+    /// Set the source of the Feature.
+    pub fn source(mut self, source: Source) -> Self {
+        self.metadata.source(source);
+        self
     }
 
     /// Returns a f32 between [0.0, 1.0] representing how similar a and b are.

@@ -46,16 +46,12 @@ impl<'a> FeatureIdentifier<'a> for Json {
                     // TODO(darren): Implement, we skip more complex types for now.
                     Value::Array(_) | Value::Object(_) => continue,
                 };
-                features.push(Feature::new_typed(key, raw_value, typed_value))
+                features.push(Feature::new_typed(key, raw_value, typed_value).source(Source::Json))
             }
             Some(features)
         } else {
             None
         }
-    }
-
-    fn source(&self) -> crate::feature::Source {
-        Source::Json
     }
 }
 
@@ -75,10 +71,5 @@ mod tests {
                 Feature::new("zz", "80.1"),
             ],
         );
-    }
-
-    #[test]
-    fn source_works() {
-        assert_eq!(Json {}.source(), Source::Json);
     }
 }
