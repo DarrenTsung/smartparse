@@ -13,17 +13,23 @@ struct Json {}
 impl<'a> FeatureIdentifier<'a> for Json {
     type Feature = KeyValue<'static>;
 
-    fn identify(&self, input: &'a str) -> Vec<Self::Feature> {
+    fn identify(&self, input: &'a str) -> Option<Vec<Self::Feature>> {
+        // Don't try to even parse as json object if it doesn't look like
+        // a json hash (what we support right now).
+        if !input.trim().starts_with("{") {
+            return None;
+        }
+
         let v: Value = if let Ok(val) = serde_json::from_str(input) {
             val
         } else {
-            return vec![];
+            return None;
         };
 
-        let mut features = vec![];
-        // TODO(darren): more complex JSON parsing, right now we'll just parse
-        // the top-level keys / values.
+        // TODO(darren): could support more complex JSON parsing, right now
+        // we'll just parse the top-level keys / values.
         if let Value::Object(map) = v {
+            let mut features = vec![];
             for (key, value) in map {
                 // NOTE(darren): maybe there is a better way here, but to derive
                 // the raw value here we convert it back to a string.. it's a bit hacky.
@@ -47,8 +53,10 @@ impl<'a> FeatureIdentifier<'a> for Json {
                 };
                 features.push(KeyValue::new_typed(key, raw_value, typed_value))
             }
+            Some(features)
+        } else {
+            None
         }
-        features
     }
 
     fn source(&self) -> crate::feature::Source {
@@ -65,7 +73,7 @@ mod tests {
     fn works_as_expected() {
         let features = Json {}.identify(r#"{ "a": "foo", "b": 100, "zz": 80.1 }"#);
         assert_similarity_equal(
-            features,
+            features.expect("found features"),
             vec![
                 KeyValue::new("a", "foo"),
                 KeyValue::new("b", "100"),
