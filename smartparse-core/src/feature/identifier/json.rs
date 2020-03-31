@@ -5,10 +5,16 @@ use serde_json::Value;
 use super::FeatureIdentifier;
 use crate::feature::{Feature, Source, TypedValue};
 
-struct Json {}
+pub(super) struct Json {}
+
+impl Json {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
 impl<'a> FeatureIdentifier<'a> for Json {
-    fn identify(&self, input: &'a str) -> Option<Vec<Feature>> {
+    fn identify(&self, input: &'a str) -> Option<Vec<Feature<'a>>> {
         // Don't try to even parse as json object if it doesn't look like
         // a json hash (what we support right now).
         if !input.trim().starts_with("{") {

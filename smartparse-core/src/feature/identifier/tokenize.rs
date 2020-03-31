@@ -4,27 +4,32 @@ use super::FeatureIdentifier;
 
 use crate::feature::Feature;
 
-trait Transform<'a, TOutput> {
+pub(super) mod transforms;
+
+pub(super) trait Transform<'a, TOutput> {
     fn transform(&self, input: &'a str) -> TOutput;
 }
 
-struct Tokenize<'a, T: Transform<'a, TOutput>, TOutput> {
+pub(super) struct Tokenize<'a, T: Transform<'a, TOutput>, TOutput> {
     transformer: T,
 
     _output: PhantomData<&'a TOutput>,
 }
 
-struct IdentityTransform {}
-impl<'a> Transform<'a, &'a str> for IdentityTransform {
-    fn transform(&self, input: &'a str) -> &'a str {
-        input
+impl<'a> Tokenize<'a, transforms::feature::FeatureTransform, Feature<'a>> {
+    pub fn new() -> Self {
+        Self {
+            transformer: transforms::feature::FeatureTransform {},
+            _output: PhantomData,
+        }
     }
 }
 
-impl<'a> Tokenize<'a, IdentityTransform, &'a str> {
-    pub fn new() -> Self {
+impl<'a> Tokenize<'a, transforms::identity::IdentityTransform, &'a str> {
+    /// Return a Tokenize that does not return Features. Only useful for tests.
+    fn identity() -> Self {
         Self {
-            transformer: IdentityTransform {},
+            transformer: transforms::identity::IdentityTransform {},
             _output: PhantomData,
         }
     }
@@ -41,7 +46,7 @@ impl<'a, T: Transform<'a, TOutput>, TOutput> Tokenize<'a, T, TOutput> {
 }
 
 impl<'a, T: Transform<'a, Feature<'a>>> FeatureIdentifier<'a> for Tokenize<'a, T, Feature<'a>> {
-    fn identify(&self, input: &'a str) -> Option<Vec<Feature>> {
+    fn identify(&self, input: &'a str) -> Option<Vec<Feature<'a>>> {
         self.tokenize(input)
     }
 }
@@ -52,7 +57,7 @@ mod tests {
 
     #[test]
     fn works_as_expected() {
-        let tokens = Tokenize::new()
+        let tokens = Tokenize::identity()
             .tokenize(r#"12:42:53.546 INFO AppDelegate.loadSplashscreen():153 - Opening trackers"#);
         assert_eq!(
             tokens.unwrap(),
