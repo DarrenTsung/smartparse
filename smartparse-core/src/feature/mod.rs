@@ -93,6 +93,16 @@ impl<'a> Feature<'a> {
         self.typed_value.as_ref().expect("exists")
     }
 
+    /// Get a reference to the typed value, will not cache.
+    /// This doesn't require mutable access.
+    fn typed_value_no_cache(&self) -> Cow<TypedValue> {
+        if self.typed_value.is_some() {
+            return Cow::Borrowed(self.typed_value.as_ref().expect("exists"));
+        }
+
+        Cow::Owned(self.parse_typed_value())
+    }
+
     fn parse_typed_value(&self) -> TypedValue<'a> {
         if let Ok(val) = i64::from_str(&self.raw_value) {
             return TypedValue::I64(val);
@@ -115,7 +125,7 @@ impl<'a> Feature<'a> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(in crate::feature) enum TypedValue<'a> {
     Null,
     Str(Cow<'a, str>),

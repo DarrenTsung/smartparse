@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod declarative_tests;
+
 mod json;
 mod tokenize;
 

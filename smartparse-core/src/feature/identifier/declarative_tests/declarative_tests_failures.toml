@@ -1,0 +1,16 @@
+### Test file used for simulating test failures / non-happy-path scenarios.
+### Useful when working on the declarative test code.
+
+# Test that fails because no input.
+[[tests]]
+    input=""
+    
+    [[tests.expected_features]]
+    value = { String = "12:42:53.546" }
+
+# Test that fails because expected features are not matched.
+[[tests]]
+    input="Some input"
+    
+    [[tests.expected_features]]
+    value = { String = "12:42:53.546" }

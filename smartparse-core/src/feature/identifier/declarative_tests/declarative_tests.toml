@@ -1,0 +1,18 @@
+### To declare a new test, add a new table (dictionary) into tests.
+### See https://github.com/toml-lang/toml#array-of-tables for toml feature documentation.
+
+[[tests]]
+    input="12:42:53.546 INFO AppDelegate.loadSplashscreen():153 - Opening trackers"
+
+    [[tests.expected_features]]
+    value = { String = "12:42:53.546" }
+    [[tests.expected_features]]
+    value = { String = "INFO" }
+    [[tests.expected_features]]
+    value = { String = "AppDelegate.loadSplashscreen():153" }
+    [[tests.expected_features]]
+    value = { String = "-" }
+    [[tests.expected_features]]
+    value = { String = "Opening" }
+    [[tests.expected_features]]
+    value = { String = "trackers" }
