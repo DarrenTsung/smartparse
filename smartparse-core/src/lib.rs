@@ -10,3 +10,6 @@
 #![allow(dead_code)]
 
 mod feature;
+
+#[cfg(test)]
+mod declarative_tests;

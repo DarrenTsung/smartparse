@@ -9,6 +9,8 @@ use self::metadata::{Metadata, Source};
 use std::borrow::Cow;
 use std::str::FromStr;
 
+pub use self::identifier::identify;
+
 /// A Feature is an identifying object found on a given item that can be used
 /// for comparison and clustering.
 #[derive(Debug)]
@@ -51,6 +53,11 @@ impl<'a> Feature<'a> {
         }
     }
 
+    /// The key of the Feature (empty if doesn't exist).
+    pub fn key(&self) -> &Cow<str> {
+        &self.key
+    }
+
     /// Set the source of the Feature.
     pub fn source(mut self, source: Source) -> Self {
         self.metadata.source(source);
@@ -80,11 +87,14 @@ impl<'a> Feature<'a> {
         1.0
     }
 
-    fn value_type(&mut self) -> Type {
+    /// Return the primative type of value.
+    pub fn value_type(&mut self) -> Type {
         self.typed_value().primative_type()
     }
 
-    fn typed_value(&mut self) -> &TypedValue {
+    /// Parse the raw string value into a typed value. Uses the
+    /// cache / sets the cache.
+    pub fn typed_value(&mut self) -> &TypedValue {
         if self.typed_value.is_some() {
             return self.typed_value.as_ref().expect("exists");
         }
@@ -95,7 +105,7 @@ impl<'a> Feature<'a> {
 
     /// Get a reference to the typed value, will not cache.
     /// This doesn't require mutable access.
-    fn typed_value_no_cache(&self) -> Cow<TypedValue> {
+    pub fn typed_value_no_cache(&self) -> Cow<TypedValue> {
         if self.typed_value.is_some() {
             return Cow::Borrowed(self.typed_value.as_ref().expect("exists"));
         }
@@ -126,7 +136,7 @@ impl<'a> Feature<'a> {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub(in crate::feature) enum TypedValue<'a> {
+pub enum TypedValue<'a> {
     Null,
     Str(Cow<'a, str>),
     Bool(bool),
@@ -135,7 +145,7 @@ pub(in crate::feature) enum TypedValue<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum Type {
+pub enum Type {
     Null,
     Str,
     Bool,

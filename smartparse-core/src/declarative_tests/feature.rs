@@ -51,7 +51,7 @@ pub struct Feature {
 impl<'a> From<ProtoFeature<'a>> for Feature {
     fn from(f: ProtoFeature<'a>) -> Self {
         Feature {
-            key: f.key.to_string(),
+            key: f.key().to_string(),
             value: Value::from(f.typed_value_no_cache().into_owned()),
         }
     }

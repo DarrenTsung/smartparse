@@ -25,7 +25,7 @@ enum FailReason {
     FeatureDoesntMatch,
 }
 
-static TEST_FILES_DIR: Dir = include_dir!("tests/declarative");
+static TEST_FILES_DIR: Dir = include_dir!("src/declarative_tests/test_files");
 
 #[test]
 fn declarative_tests_work() {
@@ -64,7 +64,7 @@ fn run_tests(tests: DeclarativeTests) {
             continue;
         }
 
-        let features: Vec<Feature> = crate::feature::identifier::identify(&test.input)
+        let features: Vec<Feature> = crate::feature::identify(&test.input)
             .into_iter()
             .map(|f| Feature::from(f))
             .collect::<Vec<_>>();
