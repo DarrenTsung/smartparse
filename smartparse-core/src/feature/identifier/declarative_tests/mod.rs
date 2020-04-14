@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use include_dir::{include_dir, Dir};
 use serde_derive::Deserialize;
 
 mod feature;
@@ -24,10 +25,20 @@ enum FailReason {
     FeatureDoesntMatch,
 }
 
+static TEST_FILES_DIR: Dir = include_dir!("tests/declarative");
+
 #[test]
 fn declarative_tests_work() {
-    let DeclarativeTests { tests } = toml::from_str(include_str!("declarative_tests.toml"))
-        .expect("Failed to parse declarative_tests.toml");
+    for file in TEST_FILES_DIR.files() {
+        let tests: DeclarativeTests =
+            toml::from_str(file.contents_utf8().expect("string contents"))
+                .expect("test file is valid DeclarativeTests");
+        run_tests(tests);
+    }
+}
+
+fn run_tests(tests: DeclarativeTests) {
+    let DeclarativeTests { tests } = tests;
 
     #[derive(Debug)]
     struct FailedDeclaractiveTest<'a> {
